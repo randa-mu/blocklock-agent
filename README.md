@@ -1,15 +1,15 @@
 # blocklock-agent
 
-[![Build Status](https://github.com/randa-mu/blocklock-agent/actions/workflows/build.yml/badge.svg)](https://github.com/randa-mu/blocklock-agent/actions/workflows/build.yml)
+[![Build Status](https://github.com/randa-mu/blocklock-agent/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/randa-mu/blocklock-agent/actions/workflows/build-and-push.yml)
 
 `blocklock-agent` is a blockchain-based timelock decryption and signature agent that uses BLS cryptography and the Blocklock protocol on the Ethereum-compatible Filecoin network. It listens for on-chain `DecryptionRequested` events and responds based on cryptographic criteria.
 
 > **Note**: You **do not need to run your own node**. The [**dcipher network**](https://docs.randa.mu) operates trusted `blocklock-agent` instances on supported chains, and can fulfill requests on your behalf.
 
-> If you want to run your own agent in **production**, you must:
-> - Use your own **BLS private key** (do _not_ reuse any defaults!)
-> - Deploy the required smart contracts from [**blocklock-solidity**](https://github.com/randa-mu/blocklock-solidity)
-> - Pass your BLS **public key** to the deployed contracts so they can verify your agent’s responses.
+If you want to run your own agent in **production**, you must:
+- Use your own **BLS private key** (do _not_ reuse any defaults!)
+- Deploy the required smart contracts from [**blocklock-solidity**](https://github.com/randa-mu/blocklock-solidity)
+- Pass your BLS **public key** to the deployed contracts so they can verify your agent’s responses.
 
 ---
 
