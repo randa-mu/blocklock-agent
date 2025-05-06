@@ -1,0 +1,59 @@
+{
+    "name": "blocklock-agent",
+    "version": "1.0.0",
+    "description": "Agent for uploading signature for on-chain timelock encryption requests to EVM chains",
+    "type": "module",
+    "main": "index.cjs",
+    "scripts": {
+        "start": "npm run build && node ./index.cjs",
+        "test": "jest ./test/*.test.ts ./test/crypto/*.test.ts",
+        "build": "npm run build:generate && npm run build:js",
+        "build:js": "esbuild src/index.ts --bundle --platform=node --target=node22 --outfile=index.cjs",
+        "build:generate": "cd blocklock-solidity && forge build && cd .. && mkdir -p src/generated && npx typechain --target ethers-v6 --out-dir src/generated './blocklock-solidity/out/*.sol/*.json'",
+        "clean": "rm -rf generated",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/randa-mu/blocklock-agent.git"
+    },
+    "keywords": [
+        "encryption",
+        "ibe",
+        "solidity"
+    ],
+    "author": "azixus",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/randa-mu/blocklock-agent/issues"
+    },
+    "homepage": "https://github.com/randa-mu/blocklock-agent#readme",
+    "dependencies": {
+        "@noble/curves": "^1.8.1",
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.57.0",
+        "@opentelemetry/exporter-prometheus": "^0.200.0",
+        "@opentelemetry/sdk-node": "^0.200.0",
+        "@typechain/ethers-v6": "^0.5.1",
+        "asn1js": "^3.0.5",
+        "commander": "^12.1.0",
+        "ethers": "^6.13.4",
+        "express": "^5.1.0",
+        "mcl-wasm": "^1.7.0",
+        "ts-node": "^10.9.2",
+        "typechain": "^8.3.2",
+        "typescript": "^5.6.3",
+        "winston": "^3.17.0"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.1",
+        "@types/jest": "^29.5.14",
+        "@types/node": "^22.10.1",
+        "esbuild": "^0.24.0",
+        "eslint": "^9.13.0",
+        "jest": "^29.7.0",
+        "ts-jest": "^29.2.5",
+        "typescript-eslint": "^8.12.2"
+    }
+}
