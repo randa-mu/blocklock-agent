@@ -1,122 +1,171 @@
-## @randamu/blocklock-agent
+# blocklock-agent
 
-The `blocklock-agent` is a blockchain-based timelock decryption and signature agent leveraging BLS signatures and blocklock mechanisms on the Ethereum-compatible Filecoin network. This agent listens for decryption requests and processes them based on predefined conditions.
+[![Build Status](https://github.com/randa-mu/blocklock-agent/actions/workflows/build.yml/badge.svg)](https://github.com/randa-mu/blocklock-agent/actions/workflows/build.yml)
 
-### Features
+`blocklock-agent` is a blockchain-based timelock decryption and signature agent that uses BLS cryptography and the Blocklock protocol on the Ethereum-compatible Filecoin network. It listens for on-chain `DecryptionRequested` events and responds based on cryptographic criteria.
 
-- **Event Listener**: Listens for `DecryptionRequested` events from the `DecryptionSender` smart contract.
-- **BLS Cryptography**: Utilizes BLS signatures for secure and efficient cryptographic operations.
-- **IBE Decryption**: Implements identity-based encryption (IBE) to handle requests securely.
-- **Health Check**: Provides an HTTP health-check endpoint.
-- **Event Replay**: Replays past unfulfilled decryption requests upon startup.
+> **Note**: You **do not need to run your own node**. The [**dcipher network**](https://docs.randa.mu) operates trusted `blocklock-agent` instances on supported chains, and can fulfill requests on your behalf.
 
-### Requirements
+> If you want to run your own agent in **production**, you must:
+> - Use your own **BLS private key** (do _not_ reuse any defaults!)
+> - Deploy the required smart contracts from [**blocklock-solidity**](https://github.com/randa-mu/blocklock-solidity)
+> - Pass your BLS **public key** to the deployed contracts so they can verify your agent’s responses.
 
-- Node.js version 16+.
-- An Ethereum-compatible blockchain node (e.g., Filecoin calibration network).
-- Access to the deployed `DecryptionSender` contract address.
+---
 
-### Installation
+## Features
 
-1. Clone the repository:
-    ```bash
-    git clone <repository-url>
-    cd blocklock-agent
-    ```
+- 🔁 **Event Listener**: Watches for `DecryptionRequested` events from the `DecryptionSender` contract.
+- 🔐 **BLS Signatures**: Signs request conditions using BLS cryptography.
+- 🧠 **IBE Integration**: Decrypts messages using identity-based encryption.
+- ⚙️ **State Persistence**: Persists last processed block and request ID to disk.
+- 📡 **Health Endpoint**: Exposes HTTP endpoint for readiness/health probes.
+- 🔄 **Event Replay**: Replays unfulfilled past requests upon restart.
+- 🧮 **Rate Limiting**: Limits the number of requests fulfilled per block.
 
-2. Install dependencies:
-    ```bash
-    npm install
-    ```
+---
 
-### Configuration
+## Requirements
 
-The agent can be configured using command-line arguments, environment variables, or a combination of both. Below are the available options:
+- Node.js v16+
+- Access to a deployed `DecryptionSender` contract
+- Connection to a blockchain node (e.g., Filecoin Calibration or mainnet)
 
-| Option                   | Default Value                                 | Environment Variable                           | Description                                                                                                        |
-|--------------------------|-----------------------------------------------|------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
-| `--port`                 | `8080`                                        | `BLOCKLOCK_PORT`                               | The port to host the health-check HTTP server.                                                                     |
-| `--rpc-url`              | `https://api.calibration.node.glif.io/rpc/v1` | `BLOCKLOCK_RPC_URL`                            | Blockchain RPC URL.                                                                                                |
-| `--private-key`          | `<Default Private Key>`                       | `BLOCKLOCK_PRIVATE_KEY`                        | Private key for transaction signing.                                                                               |
-| `--bls-key`              | `<Default BLS Key>`                           | `BLOCKLOCK_BLS_PRIVATE_KEY`                    | BLS private key for signing.                                                                                       |
-| `--decryptionSenderAddr` | `<Deployed Contract Address>`                 | `BLOCKLOCK_DECRYPTION_SENDER_CONTRACT_ADDRESS` | Address of the deployed `DecryptionSender` contract.                                                               |
-| `--state-path`           | `./state.json`                                | `BLOCKLOCK_STATE_PATH`                         | A JSON file containing the `chainHeight` at which to start processing events. Empty will start from current block. |
-| `--polling-interval`     | 1000                                          | `BLOCKLOCK_POLLING_INTERVAL`                   | How frequently in milliseconds to call the RPC for the latest events/state.                                        |
-| `--log-level`            | info                                          | `BLOCKLOCK_LOG_LEVEL`                          | The logging level for structured JSON logging. Can be "info", "debug", "error", or "trace".                        |
+---
 
-### Usage
+## Installation
 
-To start the `blocklock-agent`, run the following command:
+```bash
+git clone <repository-url>
+cd blocklock-agent
+npm install
+```
+
+---
+
+## Configuration
+
+You can configure `blocklock-agent` using CLI flags or environment variables:
+
+| CLI Flag                     | Env Var                                           | Default                                         | Description                                                                                          |
+|-----------------------------|---------------------------------------------------|-------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| `--port`                    | `BLOCKLOCK_PORT`                                  | `8080`                                          | HTTP port for health checks                                                                         |
+| `--rpc-url`                 | `BLOCKLOCK_RPC_URL`                               | `https://api.calibration.node.glif.io/rpc/v1`   | Ethereum-compatible RPC or WebSocket endpoint                                                       |
+| `--private-key`             | `BLOCKLOCK_PRIVATE_KEY`                           | _default private key_                           | Private key for signing and contract interaction                                                    |
+| `--bls-key`                 | `BLOCKLOCK_BLS_PRIVATE_KEY`                       | _default BLS key_                               | BLS private key used to sign request conditions                                                     |
+| `--decryption-sender-addr` | `BLOCKLOCK_DECRYPTION_SENDER_CONTRACT_ADDRESS`    | _deployed contract address_                     | Address of the deployed `DecryptionSender` smart contract                                            |
+| `--polling-interval`        | `BLOCKLOCK_POLLING_INTERVAL`                      | `1000` (ms)                                     | How frequently to poll the blockchain for events                                                    |
+| `--log-level`               | `BLOCKLOCK_LOG_LEVEL`                             | `info`                                          | Log verbosity: `info`, `debug`, `error`, `trace`                                                    |
+| `--state-path`              | `BLOCKLOCK_STATE_PATH`                            | `./state.json`                                  | File path to store last processed block height and request ID                                       |
+| `--rate-limit`              | `BLOCKLOCK_RATE_LIMIT`                            | _implementation-defined default_                | Maximum number of requests to fulfill per block                                                     |
+
+---
+
+## Usage
+
+Run the agent:
 
 ```bash
 npm run start [options]
 ```
 
-For example, to specify a custom RPC URL and state file, run:
+Example:
 
 ```bash
-npm run start --rpc-url http://localhost:8545 --state-file /home/cooluser/state.json
+npm run start \
+  --rpc-url http://localhost:8545 \
+  --state-path ./state.json \
+  --rate-limit 3
 ```
 
-The agent will store its state periodically to the provided state file. If a state file doesn't exist, it will start from the current chain height.
-If you wish to bootstrap it with a custom state file, an example format is the following:
-```{ "chainHeight": 123456 }```
+If no state file exists, the agent begins at the current block height. A sample state file format is:
 
-### How It Works
+```json
+{ "chainHeight": 123456 }
+```
 
-1. **Initialization**:
-   - Connects to the specified RPC URL.
-   - Configures the agent with the provided private and BLS keys.
-   - Loads the state file to determine which chain height to start from, 
-   - Retrieves past `DecryptionRequested` events from the `chainHeight` specified in the state file
-   - Listens for future `DecryptionRequested` events
+---
 
-2. **Event Processing**:
-   - For each `DecryptionRequested` event:
-     - Verifies the scheme ID (`BN254-BLS-BLOCKLOCK`).
-     - Computes the BLS signature for the request condition.
-     - Processes the ciphertext and fulfills the request via the `DecryptionSender` contract.
+## How It Works
 
-3. **Health Check**:
-   - Hosts a lightweight HTTP server on the configured port to indicate the agent's health.
+1. **Startup**:
+   - Connects to the blockchain using the configured RPC
+   - Loads cryptographic keys and config
+   - Reads `state.json` to determine where to resume processing
+   - Queries past `DecryptionRequested` events from the last known block
+   - Begins polling for new events
 
-4. **Keep Alive**:
-   - The agent remains active, continuously listening for new events and processing them in real-time.
+2. **Decryption Handling**:
+   - For each request:
+     - Verifies that the scheme is supported (`BN254-BLS-BLOCKLOCK`)
+     - Computes a BLS signature over the request condition
+     - Submits a fulfillment via `DecryptionSender`
 
-### Development
+3. **State Persistence**:
+   - Saves the latest processed block height and request ID to `state.json` to ensure replay safety
 
-#### Scripts
+4. **Health Endpoint**:
+   - HTTP server responds on the configured port to report liveness/health
 
-- Build the project:
-    ```bash
-    npm run build
-    ```
+5. **Rate Limiting**:
+   - Ensures that only a limited number of requests are fulfilled per block (useful for gas control)
 
-### Directory Structure
+---
 
-- **`crypto/`**: Contains cryptographic implementations (BLS and IBE).
-- **`generated/`**: Auto-generated smart contract TypeScript bindings / factories and type definitions.
-- **`provider.ts`**: Utilities for blockchain provider creation and retry logic.
-- **`index.ts`**: Entry point of the application.
+## Development
 
-### Testing
+```bash
+npm run build
+```
 
-To test the agent, you can simulate `DecryptionRequested` events on a local blockchain, e.g., [Anvil](https://book.getfoundry.sh/reference/anvil/).
-Note that the required smart contracts will need to be deployed on the local chain, i.e., DecryptionSender, BlocklockSender and the user contract from where the on-chain timelock encryption / decryption requests will be made.
-See the [blocklock-solidity repository](github.com/randa-mu/blocklock-solidity.git) for more.
+---
 
-### Troubleshooting
+## Directory Structure
 
-- **Error: `missing revert data`**:
-  Ensure the contract address, private key, and RPC URL are correctly configured. Ensure that the Ciphertext is correctly generated. There's an example [here](github.com/randa-mu/blocklock-solidity/blob/main/scripts/chain-interaction.ts)
-  
+- `crypto/` – Core cryptographic logic for BLS and IBE
+- `generated/` – Auto-generated contract bindings (TypeChain)
+- `provider.ts` – Blockchain connection utilities
+- `index.ts` – Application entry point
+
+---
+
+## Testing
+
+To test locally:
+
+1. Start a local chain like [Anvil](https://book.getfoundry.sh/reference/anvil/)
+2. Deploy `DecryptionSender`, `BlocklockSender`, and any relevant user contracts
+3. Emit `DecryptionRequested` events to simulate activity
+
+See [blocklock-solidity](https://github.com/randa-mu/blocklock-solidity) for contract setup and example scripts.
+
+---
+
+## Troubleshooting
+
+- **`missing revert data`**:
+  - Check the RPC URL, private key, contract address, and ciphertext validity
+  - Refer to this [example script](https://github.com/randa-mu/blocklock-solidity/blob/main/scripts/chain-interaction.ts)
+
 - **Unhandled Exception**:
-  Check the blockchain node for connectivity issues or misconfigured start block.
+  - Ensure the blockchain node is accessible
+  - Confirm that the start block exists and the chain isn’t pruned
 
-### Contributing
+---
 
-Contributions are welcome! Please submit issues or pull requests to improve the project.
+## Contributing
 
-### License
+Pull requests and issues are welcome. Help us make `blocklock-agent` better!
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+---
+
+## Acknowledgements
+
+💙 **Special thanks to the [Filecoin Foundation](https://fil.org)** for funding this work.
+
+---
+
+## License
+
+MIT — see [LICENSE](./LICENSE)
+
